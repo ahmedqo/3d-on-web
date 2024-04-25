@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js Example</title>
+    <style>
+        body {
+            margin: 0;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #tools {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: absolute;
+            inset: auto 0 0 0;
+            background-color: rgba(178, 178, 178, 0.245);
+            z-index: 10;
+        }
+        
+        select,
+        button {
+            padding: 0.5rem 1rem;
+            font-size: 1.5rem;
+        }
+        
+        input {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="tools">
+        <select id="materials">
+				<option value="0">colors</option>
+				<option value="1">disturb</option>
+				<option value="2">hardwood2_roughness</option>
+				<option value="3">roughness_map</option>
+				<option value="4">tri_pattern</option>
+				<option value="5">crate</option>
+			</select>
+        <input type="range" id="speed" min="0.01" value="0.01" max="0.5" step="0.01" />
+        <button id="play">PLAY</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Create a scene
+        const scene = new THREE.Scene();
+
+        // Create a camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        camera.lookAt(scene.position);
+
+        // Create a renderer
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Load texture images for each side
+        const textureLoader = new THREE.TextureLoader();
+        const textures = [
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/colors.png"),
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/disturb.jpg"),
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/hardwood2_roughness.jpg"),
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/roughness_map.jpg"),
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/tri_pattern.jpg"),
+            textureLoader.load("https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/crate.gif"),
+        ];
+
+        // Load GLTF/GLB model
+        // const loader = new THREE.GLTFLoader();
+        // loader.load(path, loaded, progress, error);
+
+        // Create materials for each side
+        const materials = textures.map(
+            (texture) =>
+            new THREE.MeshBasicMaterial({
+                map: texture,
+            })
+        );
+
+        // Create a cube with different textures for each side
+        const geometry = new THREE.BoxGeometry();
+        const cube = new THREE.Mesh(geometry, materials[0]);
+        scene.add(cube);
+
+        // Add lighting
+        const light1 = new THREE.DirectionalLight(0xffffff, 2.5);
+        light1.position.set(1, 1, 1);
+        scene.add(light1);
+
+        const light2 = new THREE.DirectionalLight(0xffffff, 1.5);
+        light2.position.set(-1, -1, 1);
+        scene.add(light2);
+
+        // Add mouse interaction
+        const mouse = new THREE.Vector2();
+        let isMouseDown = false,
+            isAutoMove = false,
+            moveSpeed = 0.01;
+        let previousMousePosition = {
+            x: 0,
+            y: 0,
+        };
+
+        // Add animation
+        function animate() {
+            requestAnimationFrame(animate);
+            if (isAutoMove && !isMouseDown) {
+                cube.rotation.x -= moveSpeed;
+                cube.rotation.y += moveSpeed;
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        function onMouseMove(event) {
+            // Calculate mouse position relative to window size
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            if (isMouseDown) {
+                // Calculate change in mouse position
+                const deltaX = mouse.x - previousMousePosition.x;
+                const deltaY = mouse.y - previousMousePosition.y;
+                cube.rotation.x -= deltaY; // Rotate around x-axis for vertical mouse movement
+                cube.rotation.y += deltaX; // Rotate around y-axis for horizontal mouse movement
+            }
+            previousMousePosition = {
+                x: mouse.x,
+                y: mouse.y,
+            };
+        }
+
+        function onMouseDown() {
+            isMouseDown = true;
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onWheel(event) {
+            camera.position.z += event.deltaY * 0.01;
+        }
+
+        function onClick(event) {
+            isAutoMove = !isAutoMove;
+            event.target.textContent = isAutoMove ? "PAUSE" : "PLAY";
+        }
+
+        function onSppedChange(event) {
+            moveSpeed = +event.target.value;
+        }
+
+        function onChange(event) {
+            cube.material = materials[+event.target.value];
+        }
+
+        document.querySelector("#speed").addEventListener("input", onSppedChange, false);
+        document.querySelector("#materials").addEventListener("change", onChange, false);
+        document.querySelector("#play").addEventListener("click", onClick, false);
+        renderer.domElement.addEventListener("mousemove", onMouseMove, false);
+        renderer.domElement.addEventListener("mousedown", onMouseDown, false);
+        renderer.domElement.addEventListener("mouseup", onMouseUp, false);
+        document.addEventListener("wheel", onWheel, false);
+    </script>
+</body>
+
+</html>
